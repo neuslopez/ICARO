@@ -56,199 +56,7 @@ h5f.close()
 
 profOpt = "--k"
 fitOpt  = "r"
-"""
-class Data:
-    def __init__(self, ns1 = [], s1w = [], s1h = [], s1i = [], s1q = [],
-                       ns2 = [], s2w = [], s2h = [], s2i = [], s2e = [],
-                       z   = [], x   = [], y   = [], r   = [], ok  = []):
-        self.nS1 = ns1
-        self.S1w = s1w
-        self.S1h = s1h
-        self.S1i = s1i
-        self.S1Q = s1q
 
-        self.nS2 = ns2
-        self.S2w = s2w
-        self.S2h = s2h
-        self.S2i = s2i
-        self.S2E = s2e
-
-        self.Z   = z
-        self.X   = x
-        self.Y   = y
-        self.R   = r
-        
-        self.ok  = ok
-
-    def to_arrays(self):
-        for attr in filter(lambda x: not x.endswith("__"), self.__dict__):
-            value = getattr(self, attr)
-            if value == []:
-                value = np.empty_like(self.ok)
-            setattr(self, attr, np.array(value))
-            
-
-    def mask(self, s):
-        d = Data(
-            self.nS1[s], [], [], [], self.S1Q[s],
-            self.nS2[s], [], [], [], self.S2E[s],
-            self.Z  [s], self.X  [s], self.Y  [s], self.R  [s], self.ok [s])
-        return d
-        
-
-def fill_data(inputfiles, singleS12=False):
-    data = Data()
-    for ifile in inputfiles:
-        s1s, s2s, sis = pmapf.read_pmaps(ifile)
-        evts = set(s1s.evtDaq)|set(s2s.evtDaq)
-        nevt = len(evts)
-        print(ifile, nevt)
-        
-        for i, evt in enumerate(evts):
-            s1  = s1s[s1s.evtDaq == evt]
-            s2  = s2s[s2s.evtDaq == evt]
-
-            s1peaks = set(s1.peak)
-            s2peaks = set(s2.peak)
-            
-            nS1 = len(s1peaks)
-            nS2 = len(s2peaks)
-            
-            data.nS1.append(nS1)
-            data.nS2.append(nS2)
-            
-            s1time = 0
-            for peak in s1peaks:
-                peak  = s1[s1.peak == peak]
-                times = peak.time.values
-                amps  = peak.ene.values
-                
-                data.S1w.append(width(times))
-                data.S1h.append(np.max(amps))
-                data.S1i.append(np.sum(amps))
-                s1time = times[np.argmax(amps)]
-            
-            data.S1Q.append(data.S1i[-1] if nS1 == 1 else -1)
-            s2time = 0
-            for peak in s2peaks:
-                peak  = s2[s2.peak == peak]
-                times = peak.time.values
-                amps  = peak.ene.values
-
-                data.S2w.append(width(times) * units.ns/units.mus)
-                data.S2h.append(np.max(amps))
-                data.S2i.append(np.sum(amps))
-                s2time = times[np.argmax(amps)]
-            data.S2E.append(data.S2i[-1] if nS2 == 1 else -1)
-
-            data.ok.append(nS1 == nS2 == 1)
-            z = (s2time - s1time) * units.ns / units.mus if data.ok[-1] else -1
-            data.Z.append(z)
-    data.to_arrays()
-    return data
-
-
-def pdf(data, *args, **kwargs):
-    data = np.array(data)
-    plt.hist(data, *args, **kwargs, weights=np.ones_like(data)/len(data))
-    plt.yscale("log")
-    plt.ylim(1e-4, 1.)
-
-
-def plot_S12_info(data):
-    nrows, ncols = 4, 2
-    ################################
-    plt.figure()
-    ################################
-    plt.subplot(nrows, ncols, 1)
-    pdf(data.nS1, 5, range=(0, 5))
-    plt.xlabel("# S1")
-    plt.ylabel("Entries")
-    ################################
-    plt.subplot(nrows, ncols, 2)
-    pdf(data.nS2, 5, range=(0, 5))
-    plt.xlabel("# S2")
-    plt.ylabel("Entries")
-    ################################
-    plt.subplot(nrows, ncols, 3)
-    pdf(flat(data.S1w), 20, range=(0, 500))
-    plt.xlabel("S1 width (ns)")
-    plt.ylabel("Entries")
-    ################################
-    plt.subplot(nrows, ncols, 4)
-    pdf(flat(data.S2w), 50, range=(0, 30))
-    plt.xlabel("S2 width ($\mu$s)")
-    plt.ylabel("Entries")
-    ################################
-    plt.subplot(nrows, ncols, 5)
-    pdf(flat(data.S1h), 50, range=(0, 20.))
-    plt.xlabel("S1 heigh (pes)")
-    plt.ylabel("Entries")
-    ################################
-    plt.subplot(nrows, ncols, 6)
-    pdf(flat(data.S2h), 50, range=(0, 5e3))
-    plt.xlabel("S2 heigh (pes)")
-    plt.ylabel("Entries")
-    ################################
-    plt.subplot(nrows, ncols, 7)
-    pdf(flat(data.S1i), 50, range=(0, 50))
-    plt.xlabel("S1 integral (pes)")
-    plt.ylabel("Entries")
-    ################################
-    plt.subplot(nrows, ncols, 8)
-    pdf(flat(data.S2i), 50, range=(0, 8e3))
-    plt.xlabel("S2 integral (pes)")
-    plt.ylabel("Entries")
-
-    plt.tight_layout()
-
-
-def plot_evt_info(data):
-    nrows, ncols = 3, 2
-    selection = data.Z > 0.
-    data = data.mask(selection)
-    ################################
-    plt.figure()
-    ################################
-    plt.subplot(nrows, ncols, 1)
-    pdf(flat(data.S1i), 50, range=(0, 50))
-    plt.xlabel("S1 energy (pes)")
-    plt.ylabel("Entries")
-    ################################
-    plt.subplot(nrows, ncols, 2)
-    pdf(flat(data.S2i), 50, range=(0, 8e3))
-    plt.xlabel("S2 energy (pes)")
-    plt.ylabel("Entries")
-    ################################
-    plt.subplot(nrows, ncols, 3)
-    plt.hist(flat(data.Z))
-    plt.xlabel("Drift time ($\mu$s)")
-    plt.ylabel("Event energy (pes)")
-    ################################
-    plt.subplot(nrows, ncols, 4)
-    plt.scatter(flat(data.Z), flat(data.S2i))
-    plt.xlabel("Drift time ($\mu$s)")
-    plt.ylabel("Event energy (pes)")
-    ################################
-    plt.subplot(nrows, ncols, 5)
-    plt.scatter(flat(data.Z), flat(data.S1i))
-    plt.xlabel("Drift time ($\mu$s)")
-    plt.ylabel("S1 charge (pes)")
-    plt.ylim(0, 25)
-    ################################
-    plt.subplot(nrows, ncols, 6)
-    plt.scatter(flat(data.Z), flat(data.S2i))
-    plt.xlabel("Drift time ($\mu$s)")
-    plt.ylabel("S2 energy (pes)")
-    plt.ylim(0, 8e3)
-    plt.tight_layout()
-
-
-#events = fill_data([inputfile])
-#
-#plot_S12_info(events)
-#plot_evt_info(events)
-"""
 
 class Event:
     def __init__(self):
@@ -288,31 +96,6 @@ class Dataset:
                     x.append(a)
             setattr(self, attr, np.array(x))
         print(time.time() - t0)
-#    def nS1(self):
-#        return np.array([evt.nS1 for evt in self.evts])m
-#
-#    def S1w(self):
-#        return np.array([s1w for evt in self.evts for s1w in evt.S1w])
-#
-#    def S1h(self):
-#        return np.array([s1h for evt in self.evts for s1h in evt.S1h])
-#
-#    def S1i(self):
-#        return np.array([s1i for evt in self.evts for s1i in evt.S1i])
-#
-#    def nS2(self):
-#        return np.array([evt.nS2 for evt in self.evts])
-#
-#    def S2w(self):
-#        return np.array([s2w for evt in self.evts for s2w in evt.S2w])
-#
-#    def S2h(self):
-#        return np.array([s2h for evt in self.evts for s2h in evt.S2h])
-#
-#    def S2i(self):
-#        return np.array([s2i for evt in self.evts for s2i in evt.S2i])
-#
-#    def X(self):
 
 
 def fill_events(inputfiles):
@@ -385,6 +168,7 @@ def save_to_folder(outputfolder, name):
 
 
 def plot_S12_info(data, outputfolder="plots/"):
+    print("Entering plot_S12_info")
     if not os.path.exists(outputfolder):
         os.mkdir(outputfolder)
     save = functools.partial(save_to_folder, outputfolder)
@@ -424,6 +208,7 @@ def plot_S12_info(data, outputfolder="plots/"):
 
 
 def plot_evt_info(data, outputfolder="plots/"):
+    print("Entering plot_evt_info")
     save = functools.partial(save_to_folder, outputfolder)
     plt.figure()
     ################################
@@ -552,11 +337,10 @@ print("Full set:", full.evts.size)
 print("Reduced set:", good.evts.size)
 print("Ratio:", good.evts.size/full.evts.size)
 
-print("Entering 1")
+
 t0 = time.time()
 plot_S12_info(full)
 print(time.time()-t0)
-print("Entering 2")
 t0 = time.time()
 plot_evt_info(good)
 print(time.time()-t0)
