@@ -75,7 +75,7 @@ print('Total number of events in S2 = {}'.format(len(S2)))
 len(S1), type(S1), len(S2), type(S2)
 
 
-# In[]
+#%%
 myS1 = p.S12Prop(S1)
 myS2 = p.S12Prop(S2)
 
@@ -86,8 +86,33 @@ _S2map = myS1.S1S2mapd(myS2)[1]
 _S1map._dict().keys() == _S2map._dict().keys()
 
 
+#p.myhistos(_S1map.wS12_, 100, 0.0, 0.5,color="green", title="test_hist","width S1","prova")
 
+p.Histo(_S1map.wS12_,100,"title", "x", "Entries")
+p.myhistos(_S1map.wS12_,100,"title", "x", "Entries")
 #fig, ax = plt.subplots()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -8,6 +8,7 @@ Created on Thu Mar  2 16:57:50 2017
 import numpy as np
 from   invisible_cities.core.system_of_units_c import SystemOfUnits
 units = SystemOfUnits()
+import matplotlib.pyplot as plt
 
 ### %%
 class S12Prop:
@@ -53,14 +54,33 @@ class S12Prop:
         return S12Prop(S1map), S12Prop(S2map)
         #return S1map, S2map
         
-        
- def myplot():
-     
-     
-     
-           
-        
-        
-        
+#%%
+def myhistos(x, nbins, xmin, xmax, color="red", title="", 
+             xlabel="", ylabel="Entries"):
+    plt.hist(x, nbins, color, histtype="bar", alpha=0.75)
+    plt.title(title)
+    plt.xlabel(xlabel)
+#    plt.ylabel(ylabel)
+   # if (twohist == "2"):
+   #    ax1 = fig.add_axes([0.1, 0.1, 0.8, 0.8]) # left, bottom, width, height (range 0 to 1)
+   #    ax2 = fig.add_axes([1.2, 0.1, 0.8, 0.8])
+
+
+
+#fig = plt.figure()
+#ax1 = fig.add_axes([0.1, 0.1, 0.8, 0.8]) # left, bottom, width, height (range 0 to 1)
+#ax2 = fig.add_axes([1.2, 0.1, 0.8, 0.8])
+#ax3 = fig.add_axes([1.2, 0.1, 0.8, 0.8])
+#ax1.hist(_S1map.wS12_)
+#ax1.set_yscale("log")
+
+#%%
+def Histo(x, nbins, title="hsimple", xlabel="", ylabel="Frequency"):
+    """histograms"""
+    plt.hist(x, nbins, histtype="bar", alpha=0.75)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+
 
 
