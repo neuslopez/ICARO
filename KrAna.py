@@ -26,10 +26,10 @@ from   invisible_cities.database import load_db
 from   invisible_cities.core.system_of_units_c import SystemOfUnits
 import invisible_cities.sierpe.blr as blr
 import invisible_cities.core.mpl_functions as mpl
-import invisible_cities.core.wfm_functions as wfm
-import invisible_cities.core.tbl_functions as tbl
+import invisible_cities.reco.wfm_functions as wfm
+import invisible_cities.reco.tbl_functions as tbl
 import invisible_cities.core.peak_functions_c as cpf
-import invisible_cities.core.pmaps_functions as pf
+import invisible_cities.reco.pmaps_functions as pf
 import invisible_cities.core.sensor_functions as sf
 from   invisible_cities.core.core_functions import define_window
 
