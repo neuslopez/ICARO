@@ -13,6 +13,97 @@ from matplotlib.ticker import AutoMinorLocator, MultipleLocator, FormatStrFormat
 
 ### %%
 class S12Prop:
+    """
+    input: S1L
+    returns a S1F object for specific peak
+    """        
+    
+    def __init__(self, S12dict):
+        self.S12dict = S12dict
+        self.length  = len(self.S12dict)
+        self.prop()
+
+    def dict(self):
+            return self.S12dict
+
+#    def length(self):
+#        return len(self.S12dict)
+
+#test len arrays is == length
+
+
+    def prop(self):
+        self.IDX        = np.zeros(self.length, dtype=np.int) # array index for emax
+        self.tIDX       = np.zeros(self.length, dtype=np.double) # time value for IDX
+        self.tmin       = np.zeros(self.length, dtype=np.double) # minimum t value
+        self.tmax       = np.zeros(self.length, dtype=np.double) # maximum t value
+        self.twidth     = np.zeros(self.length, dtype=np.double) # t width of signal (mus) 
+        self.tmean      = np.zeros(self.length, dtype=np.double) # mean time
+        self.emin       = np.zeros(self.length, dtype=np.double) # min energy the S1/S2 pulse
+        self.emax       = np.zeros(self.length, dtype=np.double) # max energy the S1/S2 pulse
+        self.etot       = np.zeros(self.length, dtype=np.double) # total energy
+        self.emean      = np.zeros(self.length, dtype=np.double) # total energy
+        
+
+        # lists to be filled in the loop. Lists name added 'l': lVARIABLE
+        lIDX     = []
+        ltIDX    = []
+        lemax    = []
+        ltmin    = []
+        ltmax    = []
+        ltmean   = []
+        ltwidth  = []
+        lemin    = []
+        lemax    = []
+        letot    = []
+        lemean   = []
+
+        # 1st loop over dic of events
+        # 2nd loop over dic of peaks,(ts,Es)=namedTuple (can also be accessed via value.t, value.E)
+        for evtID, evt in self.S12dict.items():  
+            for peakID, (ts, Es) in evt.items():  
+                if(evtID     == 9999): break  #------> PATCH
+                if(peakID        == 1):   break  #------> select one peak 
+
+                lIDX       .append(np.argmax(Es))
+                ltIDX      .append(ts[lIDX[-1]]                / units.mus) # use last value of lIDX: [-1]
+                ltmin      .append(np.amin  (ts)               / units.mus)
+                ltmax      .append(np.amax  (ts)               / units.mus)
+                ltwidth    .append((np.amax (ts) - np.amin(ts))/ units.mus)
+                ltmean     .append(np.mean  (ts)               / units.mus)
+                lemin      .append(np.amin  (Es))
+                lemax      .append(np.amax  (Es))
+                letot      .append(np.sum   (Es))
+                lemean     .append(np.mean  (Es))
+                
+                
+        # convert lists to numpy arrays
+        self.IDX      = np.array(lIDX)  
+        self.tIDX     = np.array(ltIDX)
+        self.tmin     = np.array(ltmin)
+        self.tmax     = np.array(ltmax)
+        self.twidth   = np.array(ltwidth)
+        self.tmean    = np.array(ltmean)
+        self.emax     = np.array(lemax)
+        self.emin     = np.array(lemin) 
+        self.etot     = np.array(letot)
+        self.emean    = np.array(lemean)
+
+         
+    def S1S2mapd(self, other):
+        filt_dict = lambda x, y: dict([ (i , x[i] ) for i in x if i in set(y) ])
+      
+        keys_S1 = set(self.S12dict.keys())
+        keys_S2 = set(other.S12dict.keys())
+        intsect = keys_S1 & keys_S2
+
+        S1map = filt_dict(self.S12dict,intsect)
+        S2map = filt_dict(other.S12dict,intsect)
+        return S12Prop(S1map), S12Prop(S2map)
+        
+
+
+class S12Prop_old:
 
     def __init__(self, S12d):
         self.S12d = S12d 
@@ -53,59 +144,11 @@ class S12Prop:
         S1map = filt_dict(self.S12d,intsect)
         S2map = filt_dict(other.S12d,intsect)
         return S12Prop(S1map), S12Prop(S2map)
-        
-#%%
-#def multh(x, nbins, xmin, xmax, color="red", title="", xlabel="", ylabel="Entries"):
-def multh(x, nbins, color="red", title="", xlabel="", ylabel="Entries"):
-    mycolor = color
-#    plt.hist(x, nbins, color = mycolor, histtype="step", alpha=0.75)
-    #plt.figure(figsize=(7, 5), dpi=100)
-
-    ## no estamos cogiendo xmin y xmax
-    plt.hist(x, nbins, color = mycolor, histtype="bar", alpha=0.75)
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    #axes.xaxis.set_label_coords(0.95, -0.10)
-    #axes.yaxis.set_label_coords(-0.1, 0.95)
-    return plt
-
-def h1(x, nbins, color="red", title="", xlabel="", ylabel="Entries",
-       legend="hi"):
-    mycolor = color
-##    plt.hist(x, nbins, color = mycolor, histtype="step", alpha=0.75)
-  #  plt.figure(figsize=(7, 5), dpi=100) 
-    plt.hist(x, nbins, color = mycolor, histtype="bar", alpha=0.75)
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-
-    majorLocator = MultipleLocator(2)  # subdivisió entre numeros visibles
-    majorFormatter = FormatStrFormatter('%d')
-    minorLocator = MultipleLocator(0.5)  # subdivisio entre les ticks petites
-
-    ax = plt.axes()
-    ax.xaxis.set_major_locator(majorLocator)
-    ax.xaxis.set_major_formatter(majorFormatter)
-
-    # for the minor ticks, use no labels; default NullFormatter
-    ax.xaxis.set_minor_locator(minorLocator)
-    ax.tick_params(which='both', direction='in')
-    #plt.rc('font', weight='bold')
-    #ax.xaxis.set_minor_locator(AutoMinorLocator())
-    ax.yaxis.set_minor_locator(AutoMinorLocator())
-    ax.xaxis.set_label_coords(0.9, -0.10)
-    ax.yaxis.set_label_coords(-0.1, 0.95)
-
-    # add ticks in opposite axis
-    ax.yaxis.set_ticks_position('both')
-    ax.xaxis.set_ticks_position('both')
     
-   # plt.legend(legend)
-    return plt
 
-
-
-
-
-
+    #        self.idxt_       = [] # index array for highest phe signal in an S1/S2
+#        self.S12SigE_    = [] # highest phe value in peak
+#        self.S12Sigt_    = [] # time in mus for idxt_
+#        self.wS12_       = [] # width of signal (mus)
+#        self.tmean_      = [] # mean time
+#        self.E_          = [] # total energy
