@@ -8,14 +8,15 @@ Created on Thu Mar  2 16:57:50 2017
 import numpy as np
 from   invisible_cities.core.system_of_units_c import SystemOfUnits
 units = SystemOfUnits()
-import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator, MultipleLocator, FormatStrFormatter
+import invisible_cities.database.load_db as DB
+DataPMT = DB.DataPMT()
+DataSiPM = DB.DataSiPM()
 
-### %%
+
 class S12Prop:
     """
-    input: S1L
-    returns a S1F object for specific peak
+    input: S12dict
+    
     """        
     
     def __init__(self, S12dict):
@@ -103,52 +104,152 @@ class S12Prop:
         
 
 
-class S12Prop_old:
 
-    def __init__(self, S12d):
-        self.S12d = S12d 
+
+class S2SiProp:
+    """
+    properties
+    """        
+    
+    def __init__(self, S2Sidict):
+        self.S2Sidict = S2Sidict
+        self.length   = len(self.S2Sidict)
         self.prop()
-    
-    def _dict(self):
-        return self.S12d
 
-    def length(self):
-        return len(self.S12d)
-    
+    def dict(self):
+            return self.S2Sidict
+
+
     def prop(self):
-        self.idxt_       = [] # index array for highest phe signal in an S1/S2
-        self.S12SigE_    = [] # highest phe value in peak
-        self.S12Sigt_    = [] # time in mus for idxt_
-        self.wS12_       = [] # width of signal (mus)
-        self.tmean_      = [] # mean time
-        self.E_          = [] # total energy
+        self.xsipms        = np.zeros(self.length, dtype=np.int) # 
+        self.ysipms        = np.zeros(self.length, dtype=np.int) # 
+        self.Qtot          = np.zeros(self.length, dtype=np.double) # Q total en el evento
+        self.x             = np.zeros(self.length, dtype=np.double) # x from barycenter
+        self.y             = np.zeros(self.length, dtype=np.double) # y from barycenter
         
-        for key,val in self.S12d.items():  # dic of events
-            for key2,val2 in val.items():  # dic of peaks
-                if(key == 9999): break  #------> PATCH
-                if(key2 == 1):   break  #------> select one peak 
-                self.idxt_     .append(np.argmax(val2[1]))
-                self.S12SigE_  .append(np.amax(val2[1]))
-                self.S12Sigt_  .append(val2[0][self.idxt_[-1]] / units.mus)
-                self.wS12_     .append((val2[0][-1] - val2[0][0] ) / units.mus)
-                self.tmean_    .append(np.mean(val2[0][:])/ units.mus)
-                self.E_        .append(np.sum(val2[1][:]))
-   
-    def S1S2mapd(self, other):
-        filt_dict = lambda x, y: dict([ (i , x[i] ) for i in x if i in set(y) ])
-      
-        keys_S1 = set(self.S12d.keys())
-        keys_S2 = set(other.S12d.keys())
-        intsect = keys_S1 & keys_S2
-
-        S1map = filt_dict(self.S12d,intsect)
-        S2map = filt_dict(other.S12d,intsect)
-        return S12Prop(S1map), S12Prop(S2map)
+        
+        lxsipms      = []
+        lysipms      = []
+        lQtot        = []
+        lx           = []
+        ly           = []
+        
     
+        for evtID, evt in self.S2Sidict.items():  
+           # if evtID != 0: break 
+            for peakID, sipms in evt.items(): 
+                xsi = []
+                ysi = []
+                Q   = []   
+                if(peakID >=1):   break
+                for sipmID, Es in sipms.items(): 
+                    lQtot     .append(np.sum(Es))               
+                    lxsipms   .append(DataSiPM.X.values[sipmID])
+                    lysipms   .append(DataSiPM.Y.values[sipmID])
+                    # for the weighted barycenter
+                    Q         .append(np.sum(Es))
+                    xsi       .append(DataSiPM.X.values[sipmID])  
+                    ysi       .append(DataSiPM.Y.values[sipmID])
+                # fill weighted average per event   
+                print('lenght Q= {}, type = {}' .format(len(Q), type(Q)))
+                print('lenght xsi= {}, type = {}'.format(len(xsi), type(xsi)))
+                print('lenght ysi= {}, type = {}'.format(len(ysi), type(ysi)))
+                print('++++++++')
+                lx  .append(np.average(xsi, weights = Q))
+                ly  .append(np.average(ysi, weights = Q))
+                
+       # convert lists to numpy arrays
+        self.xsipms      = np.array(lxsipms)  
+        self.ysipms      = np.array(lysipms)
+        self.Qtot        = np.array(lQtot)
+        self.x           = np.array(lx)
+        self.y           = np.array(ly)
 
-    #        self.idxt_       = [] # index array for highest phe signal in an S1/S2
-#        self.S12SigE_    = [] # highest phe value in peak
-#        self.S12Sigt_    = [] # time in mus for idxt_
-#        self.wS12_       = [] # width of signal (mus)
-#        self.tmean_      = [] # mean time
-#        self.E_          = [] # total energy
+
+
+class Truth_S2SiProp:
+    """
+    properties
+    """        
+    
+    def __init__(self, Tdict):
+        self.Tdict    = Tdict
+        self.length   = len(self.Tdict)
+        self.prop()
+
+    def dict(self):
+            return self.Tdict
+
+
+    def prop(self):
+        self.xposition        = np.zeros(self.length, dtype=np.double) # 
+        self.yposition        = np.zeros(self.length, dtype=np.double) # 
+        self.energies         = np.zeros(self.length, dtype=np.double) # Particle's energy
+        self.hit_energies     = np.zeros(self.length, dtype=np.double) # hit's energy
+        self.edepo            = np.zeros(self.length, dtype=np.double) # Sum of energy_hits
+        self.xtruth           = np.zeros(self.length, dtype=np.double) # x from barycenter
+        self.ytruth           = np.zeros(self.length, dtype=np.double) # y from barycenter
+        
+        
+        lxposition      = []
+        lyposition      = []
+        lenergies       = []
+        lhit_energies   = []
+        ledepo          = []
+        lx              = []
+        ly              = []
+    
+        energies = 0 
+        for evtID, evt in self.Tdict.items(): 
+            edepo = 0
+            xsi   = []
+            ysi   = []
+            hitE  = []
+            for particle, hits in evt.items(): 
+                # fill energy of particles               
+                for hitID, sipms in hits.items(): 
+                    edepo = edepo + sipms.hit_energies               
+                    lxposition    .append(sipms.position[0][0])
+                    lyposition    .append(sipms.position[0][1])
+                    lhit_energies .append(sipms.hit_energies)
+                    ledepo        .append(edepo)
+                    energies      = sipms.energies
+                    xsi           .append(sipms.position[0][0])  
+                    ysi           .append(sipms.position[0][1])
+                    hitE          .append(sipms.hit_energies[0])
+                    #print('xsi = {}'.format(xsi))
+                    #print('ysi = {}'.format(ysi))
+                    #print('hitE = {}'.format(hitE))
+                    #print('sipms.hit_energies = {}'.format(sipms.hit_energies[0]))
+                    #print('sipms.position[0][0] = {}'.format(sipms.position[0][0]))
+                    
+                
+                # fill energy of particles 
+                lenergies     .append(energies)  
+           
+            #fill weighted average per event
+            xarray = np.array(xsi)
+            yarray = np.array(ysi)
+            Earray = np.array(hitE)
+           # print('lenght E= {}, type = {}'.format(len(Earray), Earray.shape))
+           # print(xarray)
+           # print(Earray)
+           # print('lenght x= {}, type = {}'.format(len(xarray), xarray.shape))
+           # print('lenght y= {}, type = {}'.format(len(yarray), yarray.shape))
+           # print('+++++++++++++++++++++++++++++')
+            lx  .append(np.average(xarray, weights = Earray))
+            ly  .append(np.average(yarray, weights = Earray))
+            
+            #print('+++++++++++++++++++++++++++++')
+                
+                
+       # convert lists to numpy arrays
+        self.xposition      = np.array(lxposition)  
+        self.yposition      = np.array(lyposition)
+        self.energies       = np.array(lenergies)
+        self.hit_energies   = np.array(lhit_energies)
+        self.edepo          = np.array(ledepo)
+        self.xtruth         = np.array(lx)
+        self.ytruth         = np.array(ly)
+
+
