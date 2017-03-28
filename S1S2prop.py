@@ -151,10 +151,10 @@ class S2SiProp:
                     xsi       .append(DataSiPM.X.values[sipmID])  
                     ysi       .append(DataSiPM.Y.values[sipmID])
                 # fill weighted average per event   
-                print('lenght Q= {}, type = {}' .format(len(Q), type(Q)))
-                print('lenght xsi= {}, type = {}'.format(len(xsi), type(xsi)))
-                print('lenght ysi= {}, type = {}'.format(len(ysi), type(ysi)))
-                print('++++++++')
+                #print('lenght Q= {}, type = {}' .format(len(Q), type(Q)))
+                #print('lenght xsi= {}, type = {}'.format(len(xsi), type(xsi)))
+                #print('lenght ysi= {}, type = {}'.format(len(ysi), type(ysi)))
+                #print('++++++++')
                 lx  .append(np.average(xsi, weights = Q))
                 ly  .append(np.average(ysi, weights = Q))
                 
